@@ -144,3 +144,43 @@
     (if (equal? cert 'certified)
         (run-gated world-step controller actuator state0 ticks)
         cert)))
+
+;; ── The mission layer: an unproven planner over a proven controller ───────
+;;
+;; The composition point between a planner (LLM, script, human) and the
+;; control loop is a SETPOINT — a plain number, delivered through a gated
+;; tool whose precondition admits only values the safety proof quantified
+;; over (make the setpoint a domain dimension in verify-controller and the
+;; proof covers every value the gate can admit). The planner can be wrong,
+;; hostile, or jailbroken; the worst it can do is pick a boring destination.
+
+;; run-gated, but toward a goal predicate instead of a tick count.
+(define (run-gated-until world-step controller actuator state0 goal? max-steps)
+  (let loop ((s state0) (n 0))
+    (cond ((goal? s) (list 'goal-reached s 'ticks n))
+          ((>= n max-steps) (list 'max-steps s 'ticks n))
+          (else
+            (let* ((a (controller s))
+                   (v (gated-actuate actuator a)))
+              (if (equal? (car v) 'ok)
+                  (loop (world-step s a) (+ n 1))
+                  (list 'halted 'gate-rejected a 'at-tick n)))))))
+
+;; Drive a list of setpoint proposals, each through the setpoint gate.
+;; install is a pure (state value) -> state that re-aims the controller;
+;; goal? reads the installed setpoint back out of the state, so one
+;; predicate serves every leg. Rejected proposals are logged and skipped —
+;; the plant simply stays where the last proven-safe leg left it.
+;; Returns (mission-complete <state> log ((proposal verdict detail)...)).
+(define (run-mission world-step controller actuator setpoint-tool install
+                     goal? state0 proposals max-steps)
+  (let loop ((s state0) (ps proposals) (log '()))
+    (if (null? ps)
+        (list 'mission-complete s 'log (reverse log))
+        (let* ((p (car ps))
+               (v (gated-actuate setpoint-tool p)))
+          (if (equal? (car v) 'ok)
+              (let ((r (run-gated-until world-step controller actuator
+                                        (install s p) goal? max-steps)))
+                (loop (cadr r) (cdr ps) (cons (list p 'accepted r) log)))
+              (loop s (cdr ps) (cons (list p 'rejected (cadr v)) log)))))))

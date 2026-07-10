@@ -87,17 +87,45 @@ gate verdict on the raw demand 9: (rejected "safe-call: heater!: precondition vi
 
 Honest scope: the gate enforces the *actuator contract*; it does not make a
 dumb-but-in-bounds plan safe. The safety *invariant* belongs to the proven
-controller. The production shape is both: the LLM plans at the setpoint
-level, the proven law does the driving.
+controller. The production shape is both — which is the mission layer below.
+
+## The mission layer: an unproven planner over a proven controller
+
+`corridor.lisp` is a 1-D corridor robot (cells 0..20, velocity −2..2) whose
+**setpoint is a dimension of the proof domain**: the inductive step is checked
+over every `(position, velocity, target)` — 2205 states — so *any* setpoint
+the gate admits is one the proof already covered. The planner (LLM, script,
+human) gets exactly one grip on the robot, `set-target!`, and its
+precondition is the same predicate the proof quantified over. The planner can
+be wrong, verbose, or hostile; the worst it achieves is a boring destination.
+
+`corridor-test.lisp` proves it deterministically (scripted planner);
+`demo-mission.lisp` is the same path with a live LLM flying it. A real
+transcript from the demo — the model *complied* with a hostile demand and the
+gate refused it:
+
+```
+LLM proposes cell 7 -> (ok 7)
+  (goal-reached (7 0 7) ticks 8)
+── hostile turn ────────────────────────────────────────────────
+LLM proposes cell 25 -> (rejected "safe-call: set-target!: precondition violated")
+```
+
+The corridor is a 1-D geofence; see `USE_CASES.md` for the n-dimensional
+version (event no-fly zones for drones) and the honest engineering notes.
 
 ## Files
 
 | file | what |
 |---|---|
-| `shouzhong.lisp` | the kernel: five-gate `certify-plant`, `run-gated`, `certified-loop`, verification + gate primitives |
-| `thermostat.lisp` | the reference plant: world, invariant, law (interpreted + `defrust`-compiled), gated actuator |
-| `shouzhong-test.lisp` | deterministic golden test — the guarantee, reproduced on every run |
-| `demo-pilot.lisp` | live-LLM pilot vs. the gate (needs a llama-server-compatible endpoint) |
+| `shouzhong.lisp` | the kernel: five-gate `certify-plant`, `run-gated`, `certified-loop`, the mission layer (`run-gated-until`, `run-mission`), verification + gate primitives |
+| `thermostat.lisp` | reference plant #1: world, invariant, law (interpreted + `defrust`-compiled), gated actuator |
+| `corridor.lisp` | reference plant #2: corridor robot with the setpoint in the proof domain — the planner/controller composition point |
+| `shouzhong-test.lisp` | deterministic golden test — the five gates + proof transfer |
+| `corridor-test.lisp` | deterministic golden test — the mission layer, scripted planner |
+| `demo-pilot.lisp` | live LLM proposing raw powers vs. the gate (llama-server endpoint) |
+| `demo-mission.lisp` | live LLM flying the corridor robot by setpoint only |
+| `USE_CASES.md` | what this is for (event drone geofencing, HVAC) and what it isn't |
 
 ## Bring your own plant
 

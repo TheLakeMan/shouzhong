@@ -23,17 +23,28 @@ GitHub repo or push without being asked.**
   (defense in depth); `certified-loop` = certify then run.
   `verify-native-equiv` transfers proofs to `defrust`-compiled laws by
   exhaustive equality over the same domains.
-- `thermostat.lisp` — reference plant. Integer-only world (exact arithmetic
-  is what makes exhaustive coverage a proof — keep it that way). `power-ok?`
-  is deliberately the single source of truth for "in bounds": both the
-  actuation proof AND the tool precondition use it — don't fork them.
-- `shouzhong-test.lisp` / `expected_shouzhong.txt` — golden test, run via
-  `./run_tests.sh` (needs `rusty` on PATH + rustc for the defrust rows).
-  Deterministic: no LLM, no timings; bus files under `/tmp/shouzhong-box/`
-  are reset in the fixture. After changes:
-  `rusty shouzhong-test.lisp > expected_shouzhong.txt` then rerun and diff.
-- `demo-pilot.lisp` — live LLM (localhost:8080), NOT in the suite. The local
-  model is slow (~90s/call at 512 tokens); the loop is 3 ticks on purpose.
+  The MISSION LAYER (`run-gated-until`, `run-mission`) composes an unproven
+  planner over a proven controller at the SETPOINT: make the setpoint a
+  domain dimension in `verify-controller`, give the setpoint tool the same
+  predicate as its precondition, and every admissible proposal is
+  pre-proven. Don't let those two predicates drift apart.
+- `thermostat.lisp` / `corridor.lisp` — reference plants (heater; corridor
+  robot with setpoint-quantified proofs, 2205 states). Integer-only worlds
+  (exact arithmetic is what makes exhaustive coverage a proof — keep it
+  that way). Bound predicates (`power-ok?`, `accel-ok?`, `target-ok?`) are
+  deliberately the single source of truth for "in bounds": the proofs AND
+  the tool preconditions use the same one — don't fork them.
+- `shouzhong-test.lisp` / `corridor-test.lisp` + `expected_*.txt` — golden
+  tests, run via `./run_tests.sh` (needs `rusty` on PATH + rustc for the
+  defrust rows). Deterministic: no LLM, no timings; bus files under
+  `/tmp/shouzhong-box/` are reset in the fixtures. After changes:
+  `rusty <test>.lisp > expected_<name>.txt` then rerun and diff.
+- `demo-pilot.lisp` / `demo-mission.lisp` — live LLM (localhost:8080), NOT
+  in the suite; both verified end-to-end against the owner's llama-server
+  (slow, ~90s/call at 512 tokens — keep demo loops to ~3 LLM calls).
+- `USE_CASES.md` — positioning: event drone geofencing (n-D corridor),
+  HVAC, small-hardware thesis; keep claims narrow (proof is about the
+  quantized model; sensing/estimation not covered).
 
 ## Gotchas
 

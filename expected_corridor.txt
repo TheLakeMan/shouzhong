@@ -1,0 +1,25 @@
+── the plant is certified: all five gates, 2205-state domain ──
+01 control law is effect-free             => pure
+02 motor+setpoint registry certified      => certified
+03 actuation: accel in -1..1, ANY state   => verified
+04 inductive step, EVERY setpoint 0..20   => verified
+05 certify-plant, end to end              => certified
+06 no-brake-guard controller refused      => (refused inductive-step ((18 1 0) "false"))
+
+── the setpoint gate: what a planner may and may not ask for ──
+07 dock at 7                              => (ok 7)
+08 past the wall: 25                      => (rejected "safe-call: set-target!: precondition violated")
+09 behind the wall: -3                    => (rejected "safe-call: set-target!: precondition violated")
+10 between cells: 7.5                     => (rejected "safe-call: set-target!: precondition violated")
+
+── the mission: scripted planner, every proposal gated ────────
+11 mission log (proposal verdict outcome):
+   (7 accepted (goal-reached (7 0 7) ticks 8))
+   (25 rejected "safe-call: set-target!: precondition violated")
+   (0 accepted (goal-reached (0 0 0) ticks 6))
+   (-3 rejected "safe-call: set-target!: precondition violated")
+   (18 accepted (goal-reached (18 0 18) ticks 11))
+12 final state                            => (18 0 18)
+13 bus audit (setpoints + every accel)    => ("target 7" "1" "1" "0" "0" "-1" "-1" "-1" "1" "target 0" "-1" "-1" "0" "1" "0" "1" "target 18" "1" "1" "0" "0" "0" "0" "0" "0" "0" "-1" "-1")
+
+corridor-test: done
