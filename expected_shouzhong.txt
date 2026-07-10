@@ -1,0 +1,47 @@
+── GATE 1: controller purity (static — nothing has executed) ──
+01 control law is effect-free             => pure
+02 sneaky controller refused              => (refused controller-not-pure ("file-write: touches the filesystem"))
+03 ...and its payload never fired         => #f
+
+── GATE 2: actuator registry certification (static) ──────────
+04 honest heater registry                 => certified
+05 effect-dishonest vent refused          => (refused chain-not-certified ((vent! undeclared-effects (file-append))))
+
+── GATES 3–5: exhaustive proofs over temps 0..40 ──────────────
+06 actuation: command in 0..3, ANY state  => verified
+07 inductive step: safe stays safe        => verified
+08 base case: initial state 20 is safe    => #t
+09 full-blast controller refused          => (refused inductive-step ((25) "false"))
+10 overdrive refused at actuation bounds  => (refused actuation-bounds ((0) "false"))
+
+── proof transfer: the law compiled to native Rust ────────────
+11 compiled law = proven law, every temp  => verified
+12 compiled controller passes induction   => verified
+
+── the runtime gate: per-command, before the tool body runs ──
+13 bus after all proofs above             => ""
+14 in-bounds command 2                    => (ok 2)
+15 past hardware limit: 9                 => (rejected "safe-call: heater!: precondition violated")
+16 non-integer power: 1.5                 => (rejected "safe-call: heater!: precondition violated")
+17 wrong type: "hot"                      => (rejected "safe-call: heater!: power must be number")
+
+── certified runs (native law, every tick gated) ──────────────
+18 cold start 15, 6 ticks                => (final (19) ticks 6 trajectory ((15) (17) (19) (19) (19) (19) (19)))
+19 hot start 26, 6 ticks                 => (final (23) ticks 6 trajectory ((26) (25) (24) (23) (23) (23) (23)))
+20 bus audit: every command that fired   => "3
+3
+1
+1
+1
+1
+0
+0
+0
+1
+1
+1
+"
+21 unproven overdrive, gated at runtime  => (halted gate-rejected 9 at-tick 0 trajectory ((30)))
+22 certified-loop refuses blast outright => (refused inductive-step ((25) "false"))
+
+shouzhong-test: done

@@ -1,0 +1,57 @@
+---
+name: shouzhong
+description: Work on shouzhong (this repo) — the provably-safe control-loop library on Rusty. Covers the five-gate architecture, test discipline, and gotchas. Use for any change to shouzhong.lisp, thermostat.lisp, or the tests.
+---
+
+# Working on shouzhong
+
+守中 "hold to the center" — provably-safe control loops on Rusty. Pure Lisp,
+zero new interpreter code. Flagship #1 of the "guaranteed agentic AI" line;
+sibling of wuwei (`/wuwei`, agent-tool gating — shared certification pattern).
+**Currently local-only by owner instruction (2026-07-10): do not create a
+GitHub repo or push without being asked.**
+
+## Layout & architecture
+
+- `shouzhong.lisp` — the kernel. Five gates in `certify-plant`, strictly
+  ordered static→dynamic (wuwei's 2.1 discipline): (1) controller purity via
+  `check-effects`, (2) registry certification (`certify-tool-chain` + effect
+  budget), (3) `verify-actuation` (exhaustive, over ALL domain states),
+  (4) base case `safe?(state0)`, (5) `verify-controller` (inductive step).
+  **Don't reorder the gates** — static checks must reject before anything
+  executes. `run-gated` still routes every tick through `safe-call`
+  (defense in depth); `certified-loop` = certify then run.
+  `verify-native-equiv` transfers proofs to `defrust`-compiled laws by
+  exhaustive equality over the same domains.
+- `thermostat.lisp` — reference plant. Integer-only world (exact arithmetic
+  is what makes exhaustive coverage a proof — keep it that way). `power-ok?`
+  is deliberately the single source of truth for "in bounds": both the
+  actuation proof AND the tool precondition use it — don't fork them.
+- `shouzhong-test.lisp` / `expected_shouzhong.txt` — golden test, run via
+  `./run_tests.sh` (needs `rusty` on PATH + rustc for the defrust rows).
+  Deterministic: no LLM, no timings; bus files under `/tmp/shouzhong-box/`
+  are reset in the fixture. After changes:
+  `rusty shouzhong-test.lisp > expected_shouzhong.txt` then rerun and diff.
+- `demo-pilot.lisp` — live LLM (localhost:8080), NOT in the suite. The local
+  model is slow (~90s/call at 512 tokens); the loop is 3 ticks on purpose.
+
+## Gotchas
+
+- States are lists (`'(20)`), and the verify functions receive domain points
+  as arg-lists (`(lambda args ...)` — one domain per state component).
+  Controllers take the state LIST; `defrust` laws take scalars — wrap them
+  (`(define (controller-native s) (law-native (car s)))`).
+- `check-effects` returns `'pure` or a findings list — compare with
+  `equal?` against `'pure`, not `null?`.
+- `check-exhaustive` failures return a list of `((args) reason)`
+  counterexamples; `certify-plant` reports only the first (`car`).
+- Keep controllers total over the WHOLE domain (0..40 here), not just the
+  safe band — gate 3 quantifies over every state.
+- Rebuild/refresh `rusty` after interpreter changes:
+  `cd ~/projects/artifacts/rusty && cargo install --path . --bin rusty --root ~/.local`.
+
+## Conventions
+
+AGPL-3.0-or-later headers on every file; ☯ (never a crab); dedication
+exactly "In memory of my brother."; never reference Taoscii. Golden-test
+discipline is non-negotiable — anything nondeterministic goes in `demo-*`.
