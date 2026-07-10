@@ -111,8 +111,41 @@ LLM proposes cell 7 -> (ok 7)
 LLM proposes cell 25 -> (rejected "safe-call: set-target!: precondition violated")
 ```
 
-The corridor is a 1-D geofence; see `USE_CASES.md` for the n-dimensional
-version (event no-fly zones for drones) and the honest engineering notes.
+The corridor is a 1-D geofence — and `drone3d.lisp` is the n-dimensional
+version, demonstrated.
+
+## The drone: three axes, gusts inside the proof
+
+`drone3d.lisp` scales the corridor to a drone over a 100 m × 60 m event zone
+with a 40 m altitude band (1 m cells, 0.5 s ticks, ±10 m/s, ±4 m/s² of
+authority). Two things make it more than "the corridor, three times":
+
+- **The gust is a dimension of the proof domain**, not a margin note. The
+  per-axis inductive step is checked over (position × velocity × waypoint ×
+  gust) — 120,351 states across the three axes — so the invariant holds
+  against a ±2 m/s² *adversarial* disturbance on every axis, every tick. The
+  worst-case brake-travel term (10 m from full speed against the worst gust)
+  is the explicit fence inset where model error lives.
+- **The decomposition is stated, not smuggled**: near-hover x/y/z dynamics
+  decouple, the zone is a conjunction of per-axis fences, so three 1-D
+  proofs give the 3-D theorem — that composition is the one paper step in
+  the chain; everything else is exhaustively checked.
+
+The negative control earns its keep: the same law with a guard that only
+considers *calm air* looks plausible — and the checker finds the gust that
+breaks it, as a concrete counterexample:
+
+```
+03 certify-drone, end to end              => certified
+04 calm-air-only guard refused            => ((7 -4 4 -1) "false")
+06 beyond the fence (120 28 20)           => (rejected "safe-call: set-waypoint!: precondition violated")
+```
+
+The mission in `drone3d-test.lisp` flies three legs through a fixed gust
+pattern (covered by theorem, not luck — the proofs quantified over all
+gusts), with out-of-zone and off-grid waypoints rejected mid-mission and a
+complete bus audit of the 65 commands that fired. See `USE_CASES.md` for the
+honest engineering notes on scaling this to a real airframe.
 
 ## Files
 
@@ -123,6 +156,8 @@ version (event no-fly zones for drones) and the honest engineering notes.
 | `corridor.lisp` | reference plant #2: corridor robot with the setpoint in the proof domain — the planner/controller composition point |
 | `shouzhong-test.lisp` | deterministic golden test — the five gates + proof transfer |
 | `corridor-test.lisp` | deterministic golden test — the mission layer, scripted planner |
+| `drone3d.lisp` | reference plant #3: 3-D drone over an event zone — per-axis proofs with gusts in the domain |
+| `drone3d-test.lisp` | deterministic golden test — 120,351-state certification + gusty geofenced mission |
 | `demo-pilot.lisp` | live LLM proposing raw powers vs. the gate (llama-server endpoint) |
 | `demo-mission.lisp` | live LLM flying the corridor robot by setpoint only |
 | `USE_CASES.md` | what this is for (event drone geofencing, HVAC) and what it isn't |

@@ -6,12 +6,14 @@ invariant set (inductive, exhaustively checked), and no command outside the
 hardware/zone contract ever reaches an actuator, no matter who proposed it.
 Anything that fits that shape fits shouzhong.
 
-## Geofenced drones at events (the corridor, scaled up)
+## Geofenced drones at events (demonstrated: `drone3d.lisp`)
 
 The corridor robot is a 1-D geofence: "never leaves cells 0..20" is proven
 over every (position, velocity, setpoint), and the setpoint gate only admits
-destinations inside the fence. An event no-fly/stay-inside zone is the same
-theorem in more dimensions:
+destinations inside the fence. `drone3d.lisp` is the same theorem in three
+dimensions — 100 m × 60 m × 40 m zone, per-axis proofs with an adversarial
+gust quantified in the domain (120,351 states), waypoint gate on a mission
+grid, and a gusty mission flown in the golden test. The general shape:
 
 - The **zone is the invariant**: quantize the permitted volume into cells;
   `safe?` = inside the zone with enough braking margin (the corridor's
@@ -29,12 +31,13 @@ theorem in more dimensions:
 Honest engineering notes, before anyone flies this:
 
 - **State-space size.** `check-exhaustive` caps at 1M combinations. The
-  corridor is 2205 states; a 2-D zone at 1-cell resolution with velocity
-  and setpoint dimensions multiplies fast. The honest moves are coarse
-  quantization, and decomposing axes when dynamics decouple (a quadrotor's
-  x/y/z largely do): three 1-D corridor proofs cover a box zone at a tiny
-  fraction of the product space. Irregular zones need the full product or a
-  conservative box under-approximation.
+  corridor is 2205 states; a full 3-D product space would be billions. The
+  honest moves — both used by `drone3d.lisp` — are coarse quantization and
+  decomposing axes when dynamics decouple (a quadrotor's x/y/z largely do):
+  three 1-D proofs cover a box zone at a tiny fraction of the product
+  space, with the composition argument stated openly as the one paper step.
+  Irregular zones need the full product or a conservative box
+  under-approximation.
 - **The proof is about the model.** Wind, sensor noise, and continuous
   dynamics live outside `world-step`. The claim is "safe per this quantized
   model with these margins" — the margins (brake-travel analogues) are where

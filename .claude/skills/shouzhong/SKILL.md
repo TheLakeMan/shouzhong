@@ -8,8 +8,8 @@ description: Work on shouzhong (this repo) — the provably-safe control-loop li
 守中 "hold to the center" — provably-safe control loops on Rusty. Pure Lisp,
 zero new interpreter code. Flagship #1 of the "guaranteed agentic AI" line;
 sibling of wuwei (`/wuwei`, agent-tool gating — shared certification pattern).
-**Currently local-only by owner instruction (2026-07-10): do not create a
-GitHub repo or push without being asked.**
+Public at github.com/TheLakeMan/shouzhong (name confirmed by owner
+2026-07-10); pushing still requires the usual ask-first rule.
 
 ## Layout & architecture
 
@@ -28,15 +28,20 @@ GitHub repo or push without being asked.**
   domain dimension in `verify-controller`, give the setpoint tool the same
   predicate as its precondition, and every admissible proposal is
   pre-proven. Don't let those two predicates drift apart.
-- `thermostat.lisp` / `corridor.lisp` — reference plants (heater; corridor
-  robot with setpoint-quantified proofs, 2205 states). Integer-only worlds
-  (exact arithmetic is what makes exhaustive coverage a proof — keep it
-  that way). Bound predicates (`power-ok?`, `accel-ok?`, `target-ok?`) are
+- `thermostat.lisp` / `corridor.lisp` / `drone3d.lisp` — reference plants
+  (heater; corridor robot with setpoint-quantified proofs, 2205 states;
+  3-D drone with per-axis decomposed proofs and the GUST as a proof-domain
+  dimension, 120,351 states — the axis decomposition is the one paper step,
+  keep it stated in comments). Integer-only worlds (exact arithmetic is
+  what makes exhaustive coverage a proof — keep it that way). Bound
+  predicates (`power-ok?`, `accel-ok?`, `target-ok?`, `waypoint3-ok?`) are
   deliberately the single source of truth for "in bounds": the proofs AND
-  the tool preconditions use the same one — don't fork them.
-- `shouzhong-test.lisp` / `corridor-test.lisp` + `expected_*.txt` — golden
-  tests, run via `./run_tests.sh` (needs `rusty` on PATH + rustc for the
-  defrust rows). Deterministic: no LLM, no timings; bus files under
+  the tool preconditions use the same one — don't fork them. drone3d's
+  BRAKE-TRAVEL table is derived from effective decel 1 (cmd 2 − gust 1):
+  T(v) = v(v−1)/2 — recompute it if you touch AMAX or the gust magnitude.
+- `shouzhong-test.lisp` / `corridor-test.lisp` / `drone3d-test.lisp` +
+  `expected_*.txt` — golden tests, run via `./run_tests.sh` (needs `rusty`
+  on PATH + rustc for the defrust rows; drone3d takes ~7 s of proof time). Deterministic: no LLM, no timings; bus files under
   `/tmp/shouzhong-box/` are reset in the fixtures. After changes:
   `rusty <test>.lisp > expected_<name>.txt` then rerun and diff.
 - `demo-pilot.lisp` / `demo-mission.lisp` — live LLM (localhost:8080), NOT
