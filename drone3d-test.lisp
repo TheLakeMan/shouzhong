@@ -21,9 +21,9 @@
 (row "01 control law is effect-free            " (check-effects controller))
 (row "02 motor+waypoint registry certified     " (certify-registry DRONE-REGISTRY DRONE-BUDGET))
 (row "03 certify-drone, end to end             " (certify-drone '(0 4 0 4 0 20 0 4 4 20)))
+(define CALM-CEX (verify-axis calm-air-control XMAX XWPTS))
 (row "04 calm-air-only guard refused; the      " 'see-below)
-(row "   checker found the gust that breaks it "
-     (car (verify-axis calm-air-control XMAX XWPTS)))
+(row "   checker found the gust that breaks it " (car CALM-CEX))
 
 (println "")
 (println "── the waypoint gate: the geofence, enforced as a contract ────")
@@ -54,6 +54,17 @@
 (row "12 bus audit: total commands that fired  " (length BUS-LINES))
 (row "13 bus audit: waypoints admitted         "
      (filter (lambda (l) (string-starts-with? l "waypoint")) BUS-LINES))
+
+(println "")
+(println "── the proof, compiled: native property swept on all cores ────")
+(load "drone3d-native.lisp")
+(row "14 x-axis, native (79,992 states)        " (strip-limit (verify-axis-native axis-prop-n XMAX XWPTS)))
+(row "15 y-axis, native (28,182 states)        " (strip-limit (verify-axis-native axis-prop-n YMAX YWPTS)))
+(row "16 z-axis, native (12,177 states)        " (strip-limit (verify-axis-native axis-prop-n ZMAX ZWPTS)))
+(row "17 negative control: native = interpreted,"
+     'see-below)
+(row "   full counterexample list              "
+     (equal? CALM-CEX (strip-limit (verify-axis-native calm-prop-n XMAX XWPTS))))
 
 (println "")
 (println "drone3d-test: done")

@@ -147,6 +147,18 @@ gusts), with out-of-zone and off-grid waypoints rejected mid-mission and a
 complete bus audit of the 65 commands that fired. See `USE_CASES.md` for the
 honest engineering notes on scaling this to a real airframe.
 
+### The proof, compiled (needs Rusty ≥ 0.36.0)
+
+`drone3d-native.lisp` restates the axis property as a `defrust*` group —
+real Rust, compiled once — and Rusty's `check-exhaustive` sweeps a native
+property with direct calls across all CPU cores. Measured on the x-axis
+(79,992 states): interpreted **2.25 s → 2.7 ms compiled → 1.2 ms parallel
+(~1,900×)**. The trust story is unchanged: the proof of record is the
+interpreted one, and the golden test checks the native property agrees on
+verdicts *and* on the negative control's full 34-entry counterexample list.
+Prove it slow once; re-check it fast at every boot — a Pi-class board
+re-verifies this drone's entire 120k-state safety envelope in milliseconds.
+
 ## Files
 
 | file | what |
@@ -157,6 +169,7 @@ honest engineering notes on scaling this to a real airframe.
 | `shouzhong-test.lisp` | deterministic golden test — the five gates + proof transfer |
 | `corridor-test.lisp` | deterministic golden test — the mission layer, scripted planner |
 | `drone3d.lisp` | reference plant #3: 3-D drone over an event zone — per-axis proofs with gusts in the domain |
+| `drone3d-native.lisp` | the axis proof compiled to native code — ~1,900× faster re-checks, verified equal to the interpreted proof |
 | `drone3d-test.lisp` | deterministic golden test — 120,351-state certification + gusty geofenced mission |
 | `demo-pilot.lisp` | live LLM proposing raw powers vs. the gate (llama-server endpoint) |
 | `demo-mission.lisp` | live LLM flying the corridor robot by setpoint only |

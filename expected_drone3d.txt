@@ -24,4 +24,11 @@
 12 bus audit: total commands that fired   => 65
 13 bus audit: waypoints admitted          => ("waypoint (40 20 24)" "waypoint (96 56 36)" "waypoint (4 4 4)")
 
+── the proof, compiled: native property swept on all cores ────
+14 x-axis, native (79,992 states)         => verified
+15 y-axis, native (28,182 states)         => verified
+16 z-axis, native (12,177 states)         => verified
+17 negative control: native = interpreted, => see-below
+   full counterexample list               => #t
+
 drone3d-test: done
