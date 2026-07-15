@@ -49,10 +49,14 @@ and runs the certified loop on the native law.
 ## Quickstart
 
 ```bash
-# 1. Install Rusty (https://github.com/TheLakeMan/rusty)
-cargo install --git https://github.com/TheLakeMan/rusty --bin rusty --root ~/.local
+# 1. Install Rusty (prebuilt Linux binary)
+curl -fsSL https://raw.githubusercontent.com/TheLakeMan/rusty/main/install.sh | sh
+# (or, any platform with Rust: cargo install rusty-lisp)
+# NOTE: rustc must also be on PATH — the proof-transfer test compiles the
+# control law natively (defrust). wuwei/mingjian run without it; this repo doesn't.
 
-# 2. Run the proof suite — deterministic, no LLM
+# 2. Clone and run the proof suite — deterministic, no LLM
+git clone https://github.com/TheLakeMan/shouzhong && cd shouzhong
 ./run_tests.sh
 ```
 
