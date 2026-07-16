@@ -163,11 +163,42 @@ verdicts *and* on the negative control's full 34-entry counterexample list.
 Prove it slow once; re-check it fast at every boot — a Pi-class board
 re-verifies this drone's entire 120k-state safety envelope in milliseconds.
 
+## Install as a verified package
+
+shouzhong is a [Rusty package](https://github.com/TheLakeMan/rusty) — a git repo
+with a `package.lisp` manifest — so instead of "clone and trust" you can install
+the certify framework in a way you can *check*:
+
+```lisp
+(load "pkg.lisp")                                         ; Rusty's package manager
+(pkg-install "https://github.com/TheLakeMan/shouzhong")   ; clone + auto-lock
+(pkg-load "shouzhong")                                     ; the certify machinery
+```
+
+`pkg-install` records a fingerprint — every file with its SHA-256 — the moment
+the clone lands, stored *outside* the package tree. From then on:
+
+- `(shouzhong-self-check)` — has shouzhong's own installed code drifted since
+  install day? → `verified`, or `(changed ((file what) …))` naming what moved.
+- `(pkg-verify "shouzhong" fp)` — do the installed bytes match a fingerprint the
+  publisher gave you **out of band** (never one shipped in shouzhong's own repo)?
+  → `verified` / `changed`.
+
+**What this hardens, exactly.** It hardens *distribution* — "the certifier's code
+is the code that was published, unchanged since." It is **not** the safety proof;
+that is `certify-plant`'s job, run on every reachable state. And it is not proof
+against a determined local attacker (who can rewrite the lock) or a hostile
+publisher (whose out-of-band fingerprint you would be trusting). It tells you the
+code *is what you installed* — a different, smaller claim than *safe*.
+
 ## Files
 
 | file | what |
 |---|---|
 | `shouzhong.lisp` | the kernel: five-gate `certify-plant`, `run-gated`, `certified-loop`, the mission layer (`run-gated-until`, `run-mission`), verification + gate primitives |
+| `package.lisp` | Rusty package manifest — `name` / `version` / `main` |
+| `shouzhong-pkg.lisp` | package entry (`main`) — absolute-path load of the framework + `shouzhong-self-check` |
+| `shouzhong-pkg-probe.lisp` | package check — manifest valid + entry loads from a foreign cwd |
 | `thermostat.lisp` | reference plant #1: world, invariant, law (interpreted + `defrust`-compiled), gated actuator |
 | `corridor.lisp` | reference plant #2: corridor robot with the setpoint in the proof domain — the planner/controller composition point |
 | `shouzhong-test.lisp` | deterministic golden test — the five gates + proof transfer |
