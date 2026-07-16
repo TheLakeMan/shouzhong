@@ -194,6 +194,35 @@ shouzhong is the control-loop sibling of
 discipline, same checkers: wuwei gates an *agent's tools*; shouzhong gates a
 *plant's actuators* and adds the inductive safety proof over the state space.
 
+## The proof as data
+
+`certify-plant` answers yes or no. `certify-report` answers the same question and
+hands back the **proof** — an artifact you can archive, diff, `save-model`, or
+hand to [mingjian](https://github.com/TheLakeMan/mingjian):
+
+```
+23 verdict                               => certified
+24 states the proof actually covered     => 41
+25 every gate, named                     => ((purity passed) (registry passed) (actuation passed) (base-case passed) (inductive passed))
+```
+
+`domain-size` is the bounded claim made countable: "proved on 41 states" is the
+whole promise, as a number you can check against your own domains.
+
+Gates after a failure read **`not-reached`**, never `passed`:
+
+```
+26 refused at                            => purity
+27 later gates: not reached, not passed  => ((purity failed ("file-write: touches the filesystem")) (registry not-reached) (actuation not-reached) ...)
+```
+
+That isn't bookkeeping etiquette. Gate 1 proves the controller **pure**, and
+gates 3 and 5 **run** the controller across every state in the domain — filling
+in a sneaky controller's inductive cell would mean firing its payload 41 times to
+complete a table. A gate we never reached is not a gate that passed. Refusals
+carry their counterexample, so they're actionable, and `report->kg!` loads a
+report into Rusty's knowledge graph for queries across runs.
+
 ## License
 
 AGPL-3.0-or-later. Copyright (c) 2026 Nicholas Vermeulen.

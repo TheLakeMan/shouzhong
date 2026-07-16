@@ -44,4 +44,16 @@
 21 unproven overdrive, gated at runtime  => (halted gate-rejected 9 at-tick 0 trajectory ((30)))
 22 certified-loop refuses blast outright => (refused inductive-step ((25) "false"))
 
+── the proof as data (an artifact, not console output) ────────
+23 verdict                               => certified
+24 states the proof actually covered     => 41
+25 every gate, named                     => ((purity passed) (registry passed) (actuation passed) (base-case passed) (inductive passed))
+26 refused at                            => purity
+27 later gates: not reached, not passed  => ((purity failed ("file-write: touches the filesystem")) (registry not-reached) (actuation not-reached) (base-case not-reached) (inductive not-reached))
+28 ...and the payload still never fired  => #f
+29 refusal carries its counterexample    => ((25) "false")
+30 report round-trips as data            => #t
+31 triples loaded                        => 7
+32 which gates passed?                   => (((?s passed) (?v certified)))
+
 shouzhong-test: done

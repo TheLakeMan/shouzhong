@@ -101,24 +101,102 @@
 ;; All five gates, in order. 'certified, or (refused <gate> <detail>) with
 ;; nothing executed beyond the proofs themselves (the controller runs only
 ;; inside check-exhaustive, and it was just proven pure).
-(define (certify-plant world-step controller safe? state0 domains
-                       action-ok? registry budget)
-  (let ((purity (check-effects controller)))
+;; ── Proof as data ────────────────────────────────────────────────────────
+;; certify-plant answers yes or no. certify-report answers the same question and
+;; hands back the PROOF: which gates ran, what each found, how many states the
+;; exhaustive gates actually covered, and the counterexample if one fell out.
+;; Plain data — save-model round-trips it, mingjian can carry it, report->kg!
+;; makes it queryable. A proof run yields an artifact, not just console output.
+;;
+;; THE GATE ORDER IS PRESERVED, which is why gates after a failure read
+;; 'not-reached and never 'passed. That is not bookkeeping etiquette: gate 1
+;; proves the controller PURE, and gates 3 and 5 RUN the controller over every
+;; point in the domain. Filling in an impure controller's inductive-step cell
+;; would mean executing its side effects thousands of times to complete a table.
+;; A gate we never reached is not a gate that passed — say so, don't guess.
+;;
+;; domain-size is the bounded claim made countable: "proved on N states" is the
+;; whole promise, stated as a number you can check against your own domains.
+
+(define *plant-gates* '(purity registry actuation base-case inductive))
+
+(define (domain-size domains)
+  (foldl (lambda (d acc) (* acc (length d))) 1 domains))
+
+(define (plant-report verdict refused-at n gates)
+  (list 'verdict verdict 'refused-at refused-at 'domain-size n
+        'gates (append gates
+                       (map (lambda (g) (list g 'not-reached))
+                            (list-tail *plant-gates* (length gates))))))
+
+(define (report-verdict r)     (nth r 1))
+(define (report-refused-at r)  (nth r 3))
+(define (report-domain-size r) (nth r 5))
+(define (report-gates r)       (nth r 7))
+(define (report-gate r name)   (assoc name (report-gates r)))
+(define (gate-status g)        (if g (nth g 1) #f))
+(define (gate-detail r name)
+  (let ((g (report-gate r name)))
+    (if (and g (> (length g) 2)) (nth g 2) #f)))
+
+(define (certify-report world-step controller safe? state0 domains
+                        action-ok? registry budget)
+  (let ((n      (domain-size domains))
+        (purity (check-effects controller)))
     (if (not (equal? purity 'pure))
-        (list 'refused 'controller-not-pure purity)
+        (plant-report 'refused 'purity n (list (list 'purity 'failed purity)))
         (let ((cert (certify-registry registry budget)))
           (if (not (equal? cert 'certified))
-              cert
+              (plant-report 'refused 'registry n
+                            (list '(purity passed) (list 'registry 'failed cert)))
               (let ((act (verify-actuation controller action-ok? domains)))
                 (if (not (equal? act 'verified))
-                    (list 'refused 'actuation-bounds (car act))
+                    (plant-report 'refused 'actuation n
+                                  (list '(purity passed) '(registry passed)
+                                        (list 'actuation 'failed (car act))))
                     (if (not (safe? state0))
-                        (list 'refused 'initial-state-unsafe state0)
+                        (plant-report 'refused 'base-case n
+                                      (list '(purity passed) '(registry passed)
+                                            '(actuation passed)
+                                            (list 'base-case 'failed state0)))
                         (let ((ind (verify-controller world-step controller
                                                       safe? domains)))
                           (if (not (equal? ind 'verified))
-                              (list 'refused 'inductive-step (car ind))
-                              'certified))))))))))
+                              (plant-report 'refused 'inductive n
+                                            (list '(purity passed) '(registry passed)
+                                                  '(actuation passed) '(base-case passed)
+                                                  (list 'inductive 'failed (car ind))))
+                              (plant-report 'certified 'nothing n
+                                            (map (lambda (g) (list g 'passed))
+                                                 *plant-gates*))))))))))))
+
+;; Load a report into Rusty's knowledge graph so proofs are queryable across
+;; runs, exactly like mingjian does with audit rows:
+;;   (plant-<name> gate-<gate> <status>) (plant-<name> verdict <v>) (... domain-size N)
+(define (report->kg! name r)
+  (let ((s (string->symbol (format "plant-~a" name))))
+    (kg-add! s 'verdict (report-verdict r))
+    (kg-add! s 'domain-size (report-domain-size r))
+    (for-each (lambda (g)
+                (kg-add! s (string->symbol (format "gate-~a" (nth g 0))) (nth g 1)))
+              (report-gates r))
+    (+ 2 (length (report-gates r)))))
+
+;; The yes/no gate, now a reading of the report — ONE implementation of the gate
+;; order, not two that can drift apart. Its verdicts are unchanged (the goldens
+;; are the proof of that); a second copy of this order was the real hazard.
+(define (certify-plant world-step controller safe? state0 domains
+                       action-ok? registry budget)
+  (let ((r (certify-report world-step controller safe? state0 domains
+                           action-ok? registry budget)))
+    (if (equal? (report-verdict r) 'certified)
+        'certified
+        (let ((g (report-refused-at r)))
+          (cond ((equal? g 'purity)    (list 'refused 'controller-not-pure (gate-detail r 'purity)))
+                ((equal? g 'registry)  (gate-detail r 'registry))
+                ((equal? g 'actuation) (list 'refused 'actuation-bounds (gate-detail r 'actuation)))
+                ((equal? g 'base-case) (list 'refused 'initial-state-unsafe (gate-detail r 'base-case)))
+                (else                  (list 'refused 'inductive-step (gate-detail r 'inductive))))))))
 
 ;; The runtime loop: pure world-step + pure controller = bit-for-bit
 ;; reproducible trajectory; every command still crosses the gate. A

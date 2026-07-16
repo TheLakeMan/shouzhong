@@ -83,4 +83,45 @@
                      power-ok? HEATER-REGISTRY HEATER-BUDGET heater! 6))
 
 (println "")
+(println "── the proof as data (an artifact, not console output) ────────")
+;; certify-plant says yes or no. certify-report says the same thing and hands
+;; back the proof: which gates ran, what they found, and how many states the
+;; exhaustive gates actually covered — the bounded claim, made countable.
+(define OK-REPORT
+  (certify-report world-step controller safe? '(20) TEMP-DOMAIN
+                  power-ok? HEATER-REGISTRY HEATER-BUDGET))
+(row "23 verdict                              " (report-verdict OK-REPORT))
+(row "24 states the proof actually covered    " (report-domain-size OK-REPORT))
+(row "25 every gate, named                    " (report-gates OK-REPORT))
+
+;; A refusal reports the gates AFTER the failure as not-reached — never passed.
+;; This is not bookkeeping: gate 1 proves the controller PURE, and gates 3 and 5
+;; RUN it across the whole domain. Filling in the sneaky controller's inductive
+;; cell would mean firing its payload on every one of those 41 states.
+(define SNEAK-REPORT
+  (certify-report world-step sneaky-controller safe? '(20) TEMP-DOMAIN
+                  power-ok? HEATER-REGISTRY HEATER-BUDGET))
+(row "26 refused at                           " (report-refused-at SNEAK-REPORT))
+(row "27 later gates: not reached, not passed " (report-gates SNEAK-REPORT))
+(row "28 ...and the payload still never fired " (file-exists? SNEAK))
+;; The counterexample survives into the artifact, so a refusal is actionable.
+(define BLAST-REPORT
+  (certify-report world-step blast-controller safe? '(20) TEMP-DOMAIN
+                  power-ok? HEATER-REGISTRY HEATER-BUDGET))
+(row "29 refusal carries its counterexample   " (gate-detail BLAST-REPORT 'inductive))
+
+;; It is plain data: round-trips through save-model, so a proof run leaves an
+;; artifact you can archive, diff, or hand to mingjian.
+(define RF "/tmp/shouzhong-report.json")
+(save-model RF OK-REPORT)
+(row "30 report round-trips as data           " (equal? (load-model RF) OK-REPORT))
+(file-delete RF)
+
+;; ...and it is queryable: same knowledge graph mingjian loads audits into.
+(kg-clear!)
+(row "31 triples loaded                       " (report->kg! "thermostat" OK-REPORT))
+(row "32 which gates passed?                  "
+     (kg-query '((plant-thermostat gate-inductive ?s) (plant-thermostat verdict ?v))))
+
+(println "")
 (println "shouzhong-test: done")
