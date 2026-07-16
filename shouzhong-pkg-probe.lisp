@@ -33,9 +33,12 @@
       "PKG-ENTRY-OK" "PKG-ENTRY-FAIL")
     (e) "PKG-ENTRY-FAIL"))
 
-;; (3) Self-check degrades, not crashes, when pkg.lisp is not loaded.
+;; (3) Self-check degrades, not crashes, outside a real pkg-install:
+;;     Rusty <0.49 has no pkg.lisp loaded -> 'pkg-not-loaded; Rusty >=0.49
+;;     embeds pkg.lisp, so pkg-drift runs and honestly reports this
+;;     copied-not-installed package as 'no-lock. Both are graceful.
 (println
   (try-catch
-    (if (equal? 'pkg-not-loaded (car (shouzhong-self-check)))
+    (if (member (car (shouzhong-self-check)) '(pkg-not-loaded no-lock))
       "SELFCHECK-GUARDED-OK" "SELFCHECK-GUARDED-FAIL")
     (e) "SELFCHECK-GUARDED-FAIL"))
