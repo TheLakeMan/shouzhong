@@ -9,6 +9,10 @@ interpreter in Rust. shouzhong is pure Lisp on Rusty's built-in checkers — no
 new interpreter code, no external verifier, nothing to install but `rusty`
 (and `rustc`, which you already have if you built Rusty).
 
+![15-second demo: the controller proven safe over all 2205 states, a reckless one refused with its counterexample state, the actuator gate rejecting any command past the wall](demo.gif)
+
+*Live above: `rusty demo-proof.lisp` — deterministic, offline, no LLM.*
+
 ## The claim, precisely
 
 A shouzhong plant will not tick until **five gates** pass, in order, static
