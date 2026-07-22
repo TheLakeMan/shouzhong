@@ -27,6 +27,7 @@ echo "Testing shouzhong against $("$RUSTY" --version 2>/dev/null || echo "$RUSTY
 run_test shouzhong-test.lisp expected_shouzhong.txt "shouzhong-test.lisp (five gates + proof transfer — deterministic, no LLM)"
 run_test corridor-test.lisp  expected_corridor.txt  "corridor-test.lisp (mission layer — planner over proven controller)"
 run_test drone3d-test.lisp   expected_drone3d.txt   "drone3d-test.lisp (3-D drone — per-axis proofs, gusts in the domain)"
+run_test island-test.lisp    expected_island.txt    "island-test.lisp (safety-island: signed proven law + isolated untrusted brain — needs Rusty ≥0.60.0)"
 
 # ── Package check: shouzhong is a valid, cwd-independent Rusty package ─────────
 # Copies shouzhong into a throwaway $HOME/.rusty/packages/shouzhong (where pkg

@@ -1,0 +1,34 @@
+── the fail-safe must itself be proven (refuse-to-act is an action) ──
+naive-brake x verified?             => #f
+home-loiter x verified?             => #t
+home-loiter y verified?             => #t
+home-loiter z verified?             => #t
+
+── the signature gate: only the owner-signed law runs ──
+signed law loads (signed)           => signed
+tampered law + real sig (refused)   => refused-unsigned
+real law + forged sig (refused)     => refused-unsigned
+
+── brain isolated in a child process ──
+child sees the key?                 => #f
+code-shaped reply is a proposal?    => #f
+  parsed as                         => no-proposal
+
+── signed law + a BENIGN brain (proposes a valid grid waypoint) ──
+status                              => signed
+in-fence every tick?                => #t
+proposal admitted (tick 1)?         => #t
+every actuation in-bounds?          => #t
+
+── signed law + a HOSTILE brain (proposes outside the fence) ──
+status                              => signed
+any hostile proposal admitted?      => #f
+in-fence every tick?                => #t
+every actuation in-bounds?          => #t
+
+── tampered law refused → proven fail-safe flies instead ──
+status                              => refused-unsigned
+in-fence every tick (loiters home)? => #t
+every actuation in-bounds?          => #t
+
+island-test: done
