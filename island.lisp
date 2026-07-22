@@ -53,10 +53,20 @@
 
 ;; island-sign runs on the OWNER's machine at commission time (never on the robot).
 (define (island-sign datum) (ed25519-sign OWNER-SECRET (format "~s" datum)))
-;; island-verify runs on the ROBOT and touches only the public key. Refuse-by-
-;; default: any malformed/absent signature verifies as #f (ed25519-verify never
-;; raises), so a missing or forged signature can only ever DENY, never crash.
-(define (island-verify datum sig) (ed25519-verify OWNER-PUBLIC (format "~s" datum) sig))
+
+;; The robot's AUTHORIZED commissioning keys. A law is accepted if ANY key in the
+;; set verifies it. This is what lets a hardware-token public key be ADDED beside
+;; the backup key: either can commission a law, so a lost token doesn't brick the
+;; robot (recovery). Extend to M-of-N — require several signatures — for dual
+;; control. The robot still holds only PUBLIC keys and never a secret.
+(define (island-verify-any datum sig pubkeys)
+  (any? (lambda (pk) (ed25519-verify pk (format "~s" datum) sig)) pubkeys))
+(define AUTHORIZED-KEYS (list OWNER-PUBLIC))
+;; island-verify runs on the ROBOT and touches only public keys. Refuse-by-
+;; default: any malformed/absent signature — or one under a key NOT in the
+;; authorized set — verifies as #f (ed25519-verify never raises), so it can only
+;; ever DENY, never crash.
+(define (island-verify datum sig) (island-verify-any datum sig AUTHORIZED-KEYS))
 
 ;; ── The proven fail-safe ────────────────────────────────────────────────────
 ;; NOT a brake: verify-axis REFUTES pure-brake at the fence (from the floor with

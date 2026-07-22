@@ -16,5 +16,5 @@
 ;; drone3d) and the safety-island example (island.lisp) ship in the repo but are
 ;; not loaded by the entry: shouzhong is the machinery to certify YOUR plant.
 ((name "shouzhong")
- (version "0.3.0")
+ (version "0.4.0")
  (main "shouzhong-pkg.lisp"))

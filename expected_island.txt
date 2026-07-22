@@ -9,6 +9,13 @@ signed law loads (signed)           => signed
 tampered law + real sig (refused)   => refused-unsigned
 real law + forged sig (refused)     => refused-unsigned
 
+── multi-key authorized set (add a token key beside the backup) ──
+token sig, default set {backup}     => #f
+backup sig, set {backup,token}      => #t
+token sig,  set {backup,token}      => #t
+stranger sig, set {backup,token}    => #f
+forged sig,   set {backup,token}    => #f
+
 ── the boot gate: won't start without the owner key ──
 valid owner sig → armed             => armed
 forged sig → inert (won't start)    => inert

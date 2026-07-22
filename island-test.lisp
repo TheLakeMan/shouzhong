@@ -39,6 +39,24 @@
 (row "real law + forged sig (refused)    " (car (island-load MISSION-SOURCE "deadbeef")))
 
 (println "")
+(println "── multi-key authorized set (add a token key beside the backup) ──")
+;; a second identity — e.g. a hardware token — signs the SAME mission law
+(define TOKEN-KP  (ed25519-keygen "1111111111111111111111111111111111111111111111111111111111111111"))
+(define TOKEN-PUB (cadr TOKEN-KP))
+(define TOKEN-SIG (ed25519-sign (car TOKEN-KP) (format "~s" MISSION-SOURCE)))
+;; with only the backup key authorized, the token's signature is NOT accepted
+(row "token sig, default set {backup}    " (island-verify-any MISSION-SOURCE TOKEN-SIG (list OWNER-PUBLIC)))
+;; add the token key → EITHER identity can commission the law (recovery)
+(define SET2 (list OWNER-PUBLIC TOKEN-PUB))
+(row "backup sig, set {backup,token}     " (island-verify-any MISSION-SOURCE MISSION-SIG SET2))
+(row "token sig,  set {backup,token}     " (island-verify-any MISSION-SOURCE TOKEN-SIG  SET2))
+;; a key in NEITHER set is refused, and a forged sig is refused under any set
+(define STRANGER-KP  (ed25519-keygen "2222222222222222222222222222222222222222222222222222222222222222"))
+(define STRANGER-SIG (ed25519-sign (car STRANGER-KP) (format "~s" MISSION-SOURCE)))
+(row "stranger sig, set {backup,token}   " (island-verify-any MISSION-SOURCE STRANGER-SIG SET2))
+(row "forged sig,   set {backup,token}   " (island-verify-any MISSION-SOURCE "deadbeef"   SET2))
+
+(println "")
 (println "── the boot gate: won't start without the owner key ──")
 ;; a valid owner signature arms the actuators; anything else → inert (motors
 ;; never spin). This is the anti-theft / anti-hijack property.
