@@ -16,9 +16,19 @@
 (println "shouzhong safety island — the brain proposes; the signed proven law disposes")
 (println "")
 
-(println "COMMISSION  owner signs the proven control law off-robot")
-(println (format "  mission law signature (MAC) => ~a…" (substring MISSION-SIG 0 16)))
+(println "COMMISSION  owner signs the proven control law off-robot (Ed25519)")
+(println (format "  owner public key (on the robot) => ~a…" (substring OWNER-PUBLIC 0 16)))
+(println (format "  mission law signature            => ~a…" (substring MISSION-SIG 0 16)))
 (println (format "  proven fail-safe = loiter to HOME ~a (a grid waypoint, already proven)" HOME))
+(println "")
+
+(println "BOOT  the robot won't even start without a valid owner signature")
+(println (format "  valid owner signature → ~a"   (island-arm MISSION-SOURCE MISSION-SIG)))
+(println (format "  no / forged signature  → ~a  (motors never arm — anti-theft)"
+                 (island-arm MISSION-SOURCE "deadbeef")))
+(define stolen (island-mission MISSION-SOURCE "deadbeef" S0 "(println \"48 28 20\")" 6))
+(println (format "  a stolen robot (no key) actuates anything: ~a"
+                 (not (equal? 'inert (car stolen)))))
 (println "")
 
 (println "FLIGHT 1  signed law + an honest brain proposing a valid waypoint")
@@ -43,7 +53,7 @@
 (println "")
 
 (println "ISOLATION  the brain runs in a separate process and never holds the key")
-(println (format "  brain child can read the commission key: ~a" (equal? 'ok (car (proc-eval "(println ISLAND-KEY)" 5)))))
+(println (format "  brain child can read the owner secret key: ~a" (equal? 'ok (car (proc-eval "(println OWNER-SECRET)" 5)))))
 (println "")
 (println "CLAIM (narrow): the drone provably runs the owner-signed law and cannot be")
 (println "remotely made to run a rogue one or leave its proven fence. Worst case is a")

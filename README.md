@@ -210,9 +210,9 @@ code *is what you installed* — a different, smaller claim than *safe*.
 | `drone3d.lisp` | reference plant #3: 3-D drone over an event zone — per-axis proofs with gusts in the domain |
 | `drone3d-native.lisp` | the axis proof compiled to native code — ~1,900× faster re-checks, verified equal to the interpreted proof |
 | `drone3d-test.lisp` | deterministic golden test — 120,351-state certification + gusty geofenced mission |
-| `island.lisp` | safety-island rehearsal — off-robot signed proven law + an untrusted brain isolated in a child process; the host-adversary answer for autonomy |
-| `island-test.lisp` | deterministic golden test — signature gate, proven fail-safe (naive brake refuted), isolated brain, in-fence under attack |
-| `demo-island.lisp` | the safety-island story, human-readable — a compromised brain can't load a rogue law or leave the fence |
+| `island.lisp` | safety-island rehearsal — an **Ed25519**-signed proven law (owner signs off-robot; the robot holds only the public key) + a **boot gate** (won't start without the owner key — anti-theft/anti-hijack) + an untrusted brain isolated in a child process; the host-adversary answer for autonomy |
+| `island-test.lisp` | deterministic golden test — Ed25519 signature gate, boot gate (forged sig / rogue law → inert), proven fail-safe (naive brake refuted), isolated brain, in-fence under attack |
+| `demo-island.lisp` | the safety-island story, human-readable — a stolen robot without the owner key won't arm, and a compromised brain can't load a rogue law or leave the fence |
 | `demo-pilot.lisp` | live LLM proposing raw powers vs. the gate (llama-server endpoint) |
 | `demo-mission.lisp` | live LLM flying the corridor robot by setpoint only |
 | `USE_CASES.md` | what this is for (event drone geofencing, HVAC) and what it isn't |

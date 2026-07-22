@@ -3,11 +3,12 @@
 ;;; SPDX-License-Identifier: AGPL-3.0-or-later
 ;;;
 ;;; Deterministic (no LLM, no timings). Pins: the proven fail-safe (naive brake
-;;; REFUTED, home-loiter VERIFIED), the signature gate (only the signed law
-;;; runs), the untrusted brain isolated in a child (can't see the key, its output
-;;; is data not code), and that whatever the brain does the drone stays in the
-;;; proven fence and only in-bounds commands reach the actuator. Needs Rusty
-;;; ≥0.60.0 (proc-eval).
+;;; REFUTED, home-loiter VERIFIED), the Ed25519 signature gate (only the owner-
+;;; signed law runs), the BOOT gate (won't start without the owner key — a forged
+;;; sig or rogue law → inert, motors never arm), the untrusted brain isolated in
+;;; a child (can't see the secret, its output is data not code), and that whatever
+;;; the brain does the drone stays in the proven fence and only in-bounds commands
+;;; reach the actuator. Needs Rusty ≥0.79.0 (ed25519) and ≥0.60.0 (proc-eval).
 
 (load "island.lisp")
 
@@ -38,9 +39,25 @@
 (row "real law + forged sig (refused)    " (car (island-load MISSION-SOURCE "deadbeef")))
 
 (println "")
+(println "── the boot gate: won't start without the owner key ──")
+;; a valid owner signature arms the actuators; anything else → inert (motors
+;; never spin). This is the anti-theft / anti-hijack property.
+(row "valid owner sig → armed            " (island-arm MISSION-SOURCE MISSION-SIG))
+(row "forged sig → inert (won't start)   " (island-arm MISSION-SOURCE "deadbeef"))
+(row "rogue law → inert (won't start)    " (island-arm TAMPERED MISSION-SIG))
+;; an inert machine flies nothing — zero ticks, zero actuation
+(define boot-inert (island-mission TAMPERED MISSION-SIG S0 "(println \"48 28 20\")" 6))
+(row "inert mission actuates?            " (equal? 'armed (car boot-inert)))
+(row "  inert mission yields             " boot-inert)
+;; the armed mission does fly, and stays in the proven fence
+(define boot-armed (island-mission MISSION-SOURCE MISSION-SIG S0 "(println \"48 28 20\")" 6))
+(row "armed mission → flies              " (car boot-armed))
+(row "armed mission in-fence every tick? " (run-all-in-fence? (cadr boot-armed)))
+
+(println "")
 (println "── brain isolated in a child process ──")
-;; the key never crosses into the child — a brain that reaches for it gets nothing
-(row "child sees the key?                " (equal? 'ok (car (proc-eval "(println ISLAND-KEY)" 5))))
+;; the secret never crosses into the child — a brain that reaches for it gets nothing
+(row "child sees the owner secret?       " (equal? 'ok (car (proc-eval "(println OWNER-SECRET)" 5))))
 ;; the child's output is parsed as DATA, never code — a code-shaped reply is inert
 (row "code-shaped reply is a proposal?   " (list? (parse-proposal "(shell rm -rf)")))
 (row "  parsed as                        " (parse-proposal "(shell rm -rf)"))

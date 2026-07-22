@@ -9,8 +9,17 @@ signed law loads (signed)           => signed
 tampered law + real sig (refused)   => refused-unsigned
 real law + forged sig (refused)     => refused-unsigned
 
+── the boot gate: won't start without the owner key ──
+valid owner sig → armed             => armed
+forged sig → inert (won't start)    => inert
+rogue law → inert (won't start)     => inert
+inert mission actuates?             => #f
+  inert mission yields              => (inert no-actuation)
+armed mission → flies               => armed
+armed mission in-fence every tick?  => #t
+
 ── brain isolated in a child process ──
-child sees the key?                 => #f
+child sees the owner secret?        => #f
 code-shaped reply is a proposal?    => #f
   parsed as                         => no-proposal
 
