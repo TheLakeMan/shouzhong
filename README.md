@@ -18,9 +18,12 @@ new interpreter code, no external verifier, nothing to install but `rusty`
 A shouzhong plant will not tick until **five gates** pass, in order, static
 before dynamic:
 
-1. **Controller purity** *(static)* — `check-effects` proves the control law
-   is a pure function `state → action`. The actuator tool is the only path to
-   a side effect; nothing hides one inside the law.
+1. **Controller purity** *(static)* — `check-effects` **screens** the control
+   law for hidden effects. It's a static linter, not a proof (an effect *can*
+   be laundered past it — behind a higher-order call or a macro), so treat it
+   as a fast pre-filter. The real backstop is gates 4+5: they *run* `control(s)`
+   at every state, so any actual effect manifests there. The actuator tool is
+   the only intended path to a side effect.
 2. **Registry certification** *(static)* — every actuator tool has a typed
    spec, is **effect-honest** (its body contains no effect it doesn't
    declare), and fits the caller's effect budget. A tool that lies about its
